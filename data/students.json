@@ -34,5 +34,23 @@
     "notes_for_student": "",
     "id": "stu_5110694067",
     "created_at": "2026-09-19T18:12:21+00:00"
+  },
+  {
+    "student_code": "KP0003",
+    "name": "test",
+    "email": "test@gmail.com",
+    "phone": "9898989898",
+    "dob": "2026-09-01",
+    "guardian": "",
+    "city": "",
+    "batch_id": "batch_beginners",
+    "level": "Beginner",
+    "password": "pbkdf2$120000$226ba22947e03194f00f9688d202ce9f$f4f9f79236b8ebeb5a688e4f97d00bf46b881153a171c315c61275e0bfe32bea",
+    "status": "active",
+    "joined_on": "2026-09-19",
+    "monthly_fee": 1500,
+    "notes_for_student": "",
+    "id": "stu_cb86ac719f",
+    "created_at": "2026-09-19T18:12:38+00:00"
   }
 ]
