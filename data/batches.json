@@ -1,0 +1,58 @@
+[
+  {
+    "id": "batch_beginners",
+    "name": "Beginners — Adavus",
+    "level": "Beginner",
+    "age_group": "5 years and above",
+    "days": "Sat & Sun",
+    "time": "9:00 AM – 10:30 AM",
+    "mode": "In-studio",
+    "seats": 15,
+    "fee_monthly": 1500,
+    "fee_quarterly": 4200,
+    "description": "Namaskaram, the ten adavu families, basic hastas and taalam. The foundation everything else is built on.",
+    "created_at": ""
+  },
+  {
+    "id": "batch_intermediate",
+    "name": "Intermediate — Jathiswaram & Abhinaya",
+    "level": "Intermediate",
+    "age_group": "8 years and above",
+    "days": "Sat & Sun",
+    "time": "11:00 AM – 12:30 PM",
+    "mode": "In-studio",
+    "seats": 12,
+    "fee_monthly": 1800,
+    "fee_quarterly": 5100,
+    "description": "Jathiswaram, shabdam, navarasa abhinaya and the first taste of Telugu keerthanas.",
+    "created_at": ""
+  },
+  {
+    "id": "batch_advanced",
+    "name": "Advanced — Repertoire & Tarangam",
+    "level": "Advanced",
+    "age_group": "By assessment",
+    "days": "Wed & Sat",
+    "time": "6:00 PM – 8:00 PM",
+    "mode": "In-studio",
+    "seats": 10,
+    "fee_monthly": 2500,
+    "fee_quarterly": 7000,
+    "description": "Full items, Krishna Shabdam, Tarangam on the brass plate, and arangetram preparation.",
+    "created_at": ""
+  },
+  {
+    "id": "batch_online",
+    "name": "Online Batch (Global)",
+    "level": "All levels",
+    "age_group": "6 years and above",
+    "days": "Sun",
+    "time": "7:00 PM – 8:30 PM IST",
+    "mode": "Online",
+    "seats": 20,
+    "fee_monthly": 1200,
+    "fee_quarterly": 3400,
+    "description": "Live online classes for students outside the city, with recorded practice videos in the student portal.",
+    "created_at": ""
+  }
+]

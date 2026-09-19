@@ -1,0 +1,22 @@
+[
+  {
+    "id": "e1",
+    "title": "Annual Day — Nrityotsav",
+    "date": "2026-12-14",
+    "venue": "City Cultural Hall",
+    "description": "Our yearly production featuring every batch, from first-year adavus to full Tarangam.",
+    "image": "",
+    "published": true,
+    "created_at": ""
+  },
+  {
+    "id": "e2",
+    "title": "Temple Festival Performance",
+    "date": "2026-10-22",
+    "venue": "Sri Venkateswara Temple",
+    "description": "Selected students perform Krishna Shabdam and Bhama Kalapam excerpts.",
+    "image": "",
+    "published": true,
+    "created_at": ""
+  }
+]
