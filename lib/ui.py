@@ -7,7 +7,10 @@ import streamlit as st
 
 
 def esc(value) -> str:
-    return html.escape(str(value or ""))
+    """HTML-escape a value. Note 0 and False are real values, not blanks."""
+    if value is None:
+        return ""
+    return html.escape(str(value))
 
 
 def inject_css(primary="#7B1E3C", accent="#C9A227"):

@@ -1,9 +1,16 @@
-"""GitHub-backed JSON data store.
+"""JSON data store backed by a separate GitHub branch.
 
-Every table is a JSON file inside the repo's data/ directory. In production the
-app reads and writes those files through the GitHub Contents API using a token
-kept in Streamlit secrets, so all data lives in the private repo and survives
-restarts. Locally (no token configured) it falls back to the files on disk.
+Content lives on its own branch (default ``content``) inside the same private
+repository. Two reasons that matters:
+
+* Streamlit Community Cloud watches the branch it deployed from (``main``), so
+  writing data to a different branch never reboots the live app.
+* Deleting that one branch removes every student record, fee, photo and setting
+  in a single action, leaving the code untouched.
+
+Without GitHub secrets configured the app falls back to a local ``local_content``
+folder so it can be run offline. That folder is temporary; only the GitHub
+backend stores anything permanently.
 """
 from __future__ import annotations
 
@@ -11,7 +18,6 @@ import base64
 import json
 import os
 import threading
-import time
 import uuid
 from datetime import datetime, timezone
 
@@ -20,43 +26,58 @@ import streamlit as st
 
 API = "https://api.github.com"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LOCAL_DIR = os.path.join(ROOT, "data")
+LOCAL_DIR = os.path.join(ROOT, "local_content", "data")
 _LOCK = threading.Lock()
 
 TABLES = [
     "site", "students", "batches", "attendance", "fees", "videos",
     "gallery", "events", "testimonials", "enquiries", "announcements",
-    "registrations", "users",
+    "registrations", "visits",
 ]
 
 
 # --------------------------------------------------------------------------- #
 # configuration
 # --------------------------------------------------------------------------- #
-def _secret(section: str, key: str, default=None):
+def _secret(*path, default=None):
+    """Read a secret by path, e.g. _secret('github','token') or _secret('admin_password')."""
     try:
-        blob = st.secrets.get(section, {})
-        if isinstance(blob, dict) or hasattr(blob, "get"):
-            val = blob.get(key)
-            if val:
-                return val
+        node = st.secrets
+        for key in path:
+            node = node[key]
+        if node not in (None, ""):
+            return node
     except Exception:
         pass
-    return os.environ.get(f"{section.upper()}_{key.upper()}", default)
+    env = "_".join(p.upper() for p in path)
+    return os.environ.get(env, default)
 
 
 def gh_config():
-    """Return dict(token, repo, branch) when GitHub storage is configured."""
+    """Return dict(token, owner, repo, branch) when GitHub storage is configured."""
     token = _secret("github", "token")
+    owner = _secret("github", "owner")
     repo = _secret("github", "repo")
-    branch = _secret("github", "branch", "main") or "main"
-    if token and repo:
-        return {"token": token, "repo": repo.strip("/"), "branch": branch}
-    return None
+    branch = _secret("github", "branch", default="content") or "content"
+    if not token or not repo:
+        return None
+    repo = str(repo).strip("/")
+    if "/" in repo:                      # accept "owner/name" in the repo field
+        owner, repo = repo.split("/", 1)
+    if not owner:
+        return None
+    return {"token": token, "owner": owner, "repo": repo, "branch": branch}
 
 
 def storage_mode() -> str:
     return "github" if gh_config() else "local"
+
+
+def storage_label() -> str:
+    cfg = gh_config()
+    if not cfg:
+        return "local files (temporary — set GitHub secrets to store permanently)"
+    return f"{cfg['owner']}/{cfg['repo']} · branch `{cfg['branch']}`"
 
 
 def _headers(cfg):
@@ -68,12 +89,41 @@ def _headers(cfg):
 
 
 # --------------------------------------------------------------------------- #
+# branch bootstrap
+# --------------------------------------------------------------------------- #
+def _ensure_branch(cfg):
+    """Create the content branch off the repo's default branch if it is missing."""
+    if st.session_state.get("_branch_ready"):
+        return True
+    base = f"{API}/repos/{cfg['owner']}/{cfg['repo']}"
+    r = requests.get(f"{base}/branches/{cfg['branch']}", headers=_headers(cfg), timeout=20)
+    if r.status_code == 200:
+        st.session_state["_branch_ready"] = True
+        return True
+    if r.status_code != 404:
+        r.raise_for_status()
+
+    repo_info = requests.get(base, headers=_headers(cfg), timeout=20)
+    repo_info.raise_for_status()
+    default_branch = repo_info.json().get("default_branch", "main")
+    head = requests.get(f"{base}/git/ref/heads/{default_branch}",
+                        headers=_headers(cfg), timeout=20)
+    head.raise_for_status()
+    sha = head.json()["object"]["sha"]
+    made = requests.post(f"{base}/git/refs", headers=_headers(cfg), timeout=25,
+                         json={"ref": f"refs/heads/{cfg['branch']}", "sha": sha})
+    if made.status_code not in (200, 201) and "already exists" not in made.text:
+        raise RuntimeError(f"could not create branch '{cfg['branch']}': {made.text[:200]}")
+    st.session_state["_branch_ready"] = True
+    return True
+
+
+# --------------------------------------------------------------------------- #
 # low level read / write
 # --------------------------------------------------------------------------- #
 def _gh_read(cfg, table):
-    url = f"{API}/repos/{cfg['repo']}/contents/data/{table}.json"
-    r = requests.get(url, headers=_headers(cfg),
-                     params={"ref": cfg["branch"]}, timeout=20)
+    url = f"{API}/repos/{cfg['owner']}/{cfg['repo']}/contents/data/{table}.json"
+    r = requests.get(url, headers=_headers(cfg), params={"ref": cfg["branch"]}, timeout=20)
     if r.status_code == 404:
         return None, None
     r.raise_for_status()
@@ -83,7 +133,7 @@ def _gh_read(cfg, table):
 
 
 def _gh_write(cfg, table, payload, sha, message):
-    url = f"{API}/repos/{cfg['repo']}/contents/data/{table}.json"
+    url = f"{API}/repos/{cfg['owner']}/{cfg['repo']}/contents/data/{table}.json"
     content = base64.b64encode(
         json.dumps(payload, indent=2, ensure_ascii=False).encode("utf-8")
     ).decode("ascii")
@@ -118,19 +168,18 @@ def _local_write(table, payload):
 # cached public API
 # --------------------------------------------------------------------------- #
 def _cache():
-    if "_store_cache" not in st.session_state:
-        st.session_state["_store_cache"] = {}
-    return st.session_state["_store_cache"]
+    return st.session_state.setdefault("_store_cache", {})
 
 
 def _shas():
-    if "_store_shas" not in st.session_state:
-        st.session_state["_store_shas"] = {}
-    return st.session_state["_store_shas"]
+    return st.session_state.setdefault("_store_shas", {})
+
+
+def note_error(exc):
+    st.session_state.setdefault("_store_errors", []).append(str(exc)[:400])
 
 
 def load(table, default=None):
-    """Read a table, using the per-session cache when available."""
     cache = _cache()
     if table in cache:
         return cache[table]
@@ -139,32 +188,32 @@ def load(table, default=None):
     data = None
     if cfg:
         try:
+            _ensure_branch(cfg)
             data, sha = _gh_read(cfg, table)
             _shas()[table] = sha
-        except Exception as exc:  # network / auth problem -> fall back to disk
-            st.session_state.setdefault("_store_errors", []).append(str(exc))
+        except Exception as exc:
+            note_error(exc)
             data = _local_read(table)
     else:
         data = _local_read(table)
 
     if data is None:
         data = default if default is not None else []
-        # seed the table so it exists from here on
         try:
             save(table, data, f"seed {table}.json")
             return _cache()[table]
-        except Exception:
-            pass
+        except Exception as exc:
+            note_error(exc)
     cache[table] = data
     return data
 
 
 def save(table, payload, message=None):
-    """Persist a table and refresh the cache."""
     message = message or f"update {table}.json"
     cfg = gh_config()
     with _LOCK:
         if cfg:
+            _ensure_branch(cfg)
             sha = _shas().get(table)
             if sha is None:
                 try:
@@ -174,8 +223,7 @@ def save(table, payload, message=None):
             try:
                 new_sha = _gh_write(cfg, table, payload, sha, message)
             except RuntimeError:
-                # stale sha (someone else wrote) -> re-read and retry once
-                _, sha = _gh_read(cfg, table)
+                _, sha = _gh_read(cfg, table)          # stale sha -> refetch once
                 new_sha = _gh_write(cfg, table, payload, sha, message)
             _shas()[table] = new_sha
         else:
@@ -185,7 +233,6 @@ def save(table, payload, message=None):
 
 
 def refresh(table=None):
-    """Drop cached copies so the next read hits GitHub again."""
     if table:
         _cache().pop(table, None)
         _shas().pop(table, None)

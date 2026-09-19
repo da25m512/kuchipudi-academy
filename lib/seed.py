@@ -3,6 +3,7 @@
 SITE = {
     "academy_name": "Nrityanjali Kuchipudi Academy",
     "tagline": "Where devotion becomes dance",
+    "hero_eyebrow": "Classical Kuchipudi",
     "hero_heading": "Learn Kuchipudi the way it was meant to be taught",
     "hero_sub": (
         "A classical Kuchipudi school rooted in the Andhra tradition — abhinaya, "
@@ -30,6 +31,17 @@ SITE = {
         "to full-length items — while keeping classes joyful and accessible for "
         "children and adults alike."
     ),
+    "syllabus_heading": "The first year, roughly",
+    "syllabus": [
+        {"name": "Tatta adavu",
+         "note": "The very first strike. Feet flat, knees turned out, taalam counted aloud."},
+        {"name": "Natta adavu",
+         "note": "Stretch and reach — the line of the leg and the line of the arm agreeing."},
+        {"name": "Kuditta metta",
+         "note": "Heel and ball of the foot in conversation with the beat."},
+        {"name": "Jaaru adavu",
+         "note": "The glide that gives Kuchipudi its rounded, flowing signature."},
+    ],
     "why_us": [
         {"icon": "ॐ", "title": "Authentic parampara",
          "text": "Traditional Kuchipudi repertoire taught in the guru-shishya way, item by item."},
@@ -49,6 +61,11 @@ SITE = {
     "facebook": "",
     "instagram_embed_note": "Latest reels and performance clips from our Instagram",
     "footer_note": "Established with love for the art of Kuchipudi.",
+    "why_us_heading": "An old form, taught carefully",
+    "why_us_lead": "Kuchipudi rewards patience. These are the things we refuse to rush.",
+    "cta_heading": "Come and watch a class first",
+    "cta_lead": "Trial classes are free. Bring comfortable clothes and a willingness to count out loud.",
+    "fees_note": "Fees are payable monthly or quarterly in advance. A one-time registration fee may apply for new students. Trial class is free.",
     "primary_color": "#7B1E3C",
     "accent_color": "#C9A227",
     "announcement_banner": "",
@@ -116,9 +133,4 @@ ANNOUNCEMENTS = [
      "audience": "all", "pinned": True, "created_at": ""},
 ]
 
-ADAVU_NOTES = [
-    ("Tatta adavu", "The very first strike. Feet flat, knees turned out, taalam counted aloud."),
-    ("Natta adavu", "Stretch and reach — the line of the leg and the line of the arm agreeing."),
-    ("Kuditta metta", "Heel and ball of the foot in conversation with the beat."),
-    ("Jaaru adavu", "The glide that gives Kuchipudi its rounded, flowing signature."),
-]
+
