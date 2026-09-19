@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "name": "DFdf",
+    "dob": "2026-09-01",
+    "phone": "41235",
+    "email": "fgsg@sda.com",
+    "guardian": "",
+    "city": "",
+    "batch_id": "batch_beginners",
+    "batch_label": "Beginners — Adavus — Sat & Sun 9:00 AM – 10:30 AM",
+    "experience": "Complete beginner",
+    "notes": "",
+    "password": "pbkdf2$120000$2f88d7f18d680ce1aa1d297eee2aff67$14d1a9995296566abff2faf43d64c10bf314863ff9937fef15b6840608615ea2",
+    "status": "pending",
+    "id": "reg_c44f035c57",
+    "created_at": "2026-09-19T12:14:13+00:00"
+  }
+]
