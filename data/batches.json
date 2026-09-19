@@ -40,19 +40,5 @@
     "fee_quarterly": 7000,
     "description": "Full items, Krishna Shabdam, Tarangam on the brass plate, and arangetram preparation.",
     "created_at": ""
-  },
-  {
-    "id": "batch_online",
-    "name": "Online Batch (Global)",
-    "level": "All levels",
-    "age_group": "6 years and above",
-    "days": "Sun",
-    "time": "7:00 PM – 8:30 PM IST",
-    "mode": "Online",
-    "seats": 20,
-    "fee_monthly": 1200,
-    "fee_quarterly": 3400,
-    "description": "Live online classes for students outside the city, with recorded practice videos in the student portal.",
-    "created_at": ""
   }
 ]
