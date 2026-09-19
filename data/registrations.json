@@ -11,9 +11,24 @@
     "experience": "Complete beginner",
     "notes": "",
     "password": "pbkdf2$120000$2f88d7f18d680ce1aa1d297eee2aff67$14d1a9995296566abff2faf43d64c10bf314863ff9937fef15b6840608615ea2",
-    "status": "approved",
+    "status": "pending",
     "id": "reg_c44f035c57",
-    "created_at": "2026-09-19T12:14:13+00:00",
-    "updated_at": "2026-09-19T17:36:50+00:00"
+    "created_at": "2026-09-19T12:14:13+00:00"
+  },
+  {
+    "name": "test",
+    "dob": "2026-09-01",
+    "phone": "9898989898",
+    "email": "test@gmail.com",
+    "guardian": "",
+    "city": "",
+    "batch_id": "batch_beginners",
+    "batch_label": "Beginners — Adavus — Sat & Sun 9:00 AM – 10:30 AM",
+    "experience": "Complete beginner",
+    "notes": "",
+    "password": "pbkdf2$120000$226ba22947e03194f00f9688d202ce9f$f4f9f79236b8ebeb5a688e4f97d00bf46b881153a171c315c61275e0bfe32bea",
+    "status": "pending",
+    "id": "reg_f769af9ab3",
+    "created_at": "2026-09-19T17:39:16+00:00"
   }
 ]
