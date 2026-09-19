@@ -11,8 +11,9 @@
     "experience": "Complete beginner",
     "notes": "",
     "password": "pbkdf2$120000$2f88d7f18d680ce1aa1d297eee2aff67$14d1a9995296566abff2faf43d64c10bf314863ff9937fef15b6840608615ea2",
-    "status": "pending",
+    "status": "approved",
     "id": "reg_c44f035c57",
-    "created_at": "2026-09-19T12:14:13+00:00"
+    "created_at": "2026-09-19T12:14:13+00:00",
+    "updated_at": "2026-09-19T17:36:50+00:00"
   }
 ]
