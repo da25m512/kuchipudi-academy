@@ -11,12 +11,9 @@ def esc(value) -> str:
 
 
 def inject_css(primary="#7B1E3C", accent="#C9A227"):
-    st.markdown(
-        f"""
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
+    st.html(
+        f"""<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Jost:wght@300;400;500;600&display=swap');
 :root {{
   --ink:#241a1d; --muted:#6d5f63; --line:#e7dcd2;
   --primary:{primary}; --accent:{accent};
@@ -128,7 +125,9 @@ a {{ color:var(--primary); }}
 /* ---------- streamlit widgets ---------- */
 .stButton>button, .stFormSubmitButton>button {{
   border-radius:999px;border:1px solid var(--primary);background:var(--primary);color:#fff;
-  font-weight:500;letter-spacing:.03em;padding:.5rem 1.3rem;transition:.18s; }}
+  font-weight:500;letter-spacing:.02em;padding:.5rem .9rem;transition:.18s;
+  white-space:nowrap;overflow:visible; }}
+.stButton>button p, .stFormSubmitButton>button p {{ white-space:nowrap; }}
 .stButton>button:hover, .stFormSubmitButton>button:hover {{
   background:#5d1430;border-color:#5d1430;color:#fff;transform:translateY(-1px); }}
 .stButton>button[kind="secondary"] {{ background:transparent;color:var(--primary); }}
@@ -142,46 +141,40 @@ hr {{ border-color:var(--line); }}
   .hero {{ padding:2.2rem 1.4rem; }} .hero h1 {{ font-size:2.1rem; }}
   .sec h2 {{ font-size:1.7rem; }}
 }}
-</style>
-""",
-        unsafe_allow_html=True,
+</style>"""
     )
 
 
 def brandbar(site):
     initial = esc(site.get("academy_name", "N"))[:1] or "N"
-    st.markdown(
+    st.html(
         f"""<div class="brandbar">
   <div class="brandmark">{initial}</div>
   <div><div class="brandname">{esc(site.get('academy_name'))}</div>
   <div class="brandtag">{esc(site.get('tagline'))}</div></div>
-</div>""",
-        unsafe_allow_html=True,
+</div>"""
     )
 
 
 def section(eyebrow, heading, lead=""):
-    st.markdown(
+    st.html(
         f"""<div class="sec"><div class="eyebrow">{esc(eyebrow)}</div>
 <h2>{esc(heading)}</h2><div class="rule"></div>
-{f'<p class="lead">{esc(lead)}</p>' if lead else ''}</div>""",
-        unsafe_allow_html=True,
+{f'<p class="lead">{esc(lead)}</p>' if lead else ''}</div>"""
     )
 
 
 def card(glyph, title, text):
-    st.markdown(
+    st.html(
         f"""<div class="card"><div class="glyph">{esc(glyph)}</div>
-<h4>{esc(title)}</h4><p>{esc(text)}</p></div>""",
-        unsafe_allow_html=True,
+<h4>{esc(title)}</h4><p>{esc(text)}</p></div>"""
     )
 
 
 def kpi(number, label):
-    st.markdown(
+    st.html(
         f"""<div class="kpi"><div class="n">{esc(number)}</div>
-<div class="l">{esc(label)}</div></div>""",
-        unsafe_allow_html=True,
+<div class="l">{esc(label)}</div></div>"""
     )
 
 
@@ -202,12 +195,11 @@ def footer(site):
                        ("Facebook", "facebook"), ("WhatsApp", "whatsapp")):
         if site.get(key):
             links.append(f'<a href="{esc(site[key])}" target="_blank">{label}</a>')
-    st.markdown(
+    st.html(
         f"""<div class="footer">
 <div class="fname">{esc(site.get('academy_name'))}</div>
 <div style="margin:.45rem 0">{' &nbsp;·&nbsp; '.join(bits)}</div>
 <div style="margin:.45rem 0">{' &nbsp;·&nbsp; '.join(links)}</div>
 <div style="margin-top:.8rem;opacity:.8">{esc(site.get('footer_note'))}</div>
-</div>""",
-        unsafe_allow_html=True,
+</div>"""
     )
