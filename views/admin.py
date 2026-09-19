@@ -8,33 +8,39 @@ from datetime import date, datetime
 
 import streamlit as st
 
-from lib import auth, seed, store
+from lib import auth, seed, store, visits
 from lib.ui import esc, kpi, pill, section
 from views.public import _embed_video
 
 
 # --------------------------------------------------------------------------- #
 def login_panel(site):
-    section("Admin", "Sign in to the admin portal")
+    section("Admin", "Admin console")
+    if not auth.admin_password_configured():
+        st.error("No admin password is set. Add `admin_password` to the app's "
+                 "Streamlit secrets, then reload this page.")
+        st.code('admin_password = "pick-something-long-and-private"', language="toml")
+        return
+
+    locked = auth.lockout_remaining()
+    if locked:
+        st.error(f"Too many incorrect attempts. Try again in {locked // 60 + 1} minute(s).")
+        return
+
     col1, col2 = st.columns([2, 3])
     with col1:
         with st.form("admin_login"):
-            u = st.text_input("Username", value="")
-            p = st.text_input("Password", type="password")
+            pw = st.text_input("Password", type="password")
             if st.form_submit_button("Sign in", width="stretch"):
-                user = auth.admin_login(u, p)
-                if user:
-                    auth.login_as(user, "admin")
+                if auth.admin_login(pw):
+                    auth.login_as({"name": "Administrator", "role": "admin"}, "admin")
                     st.rerun()
                 else:
-                    st.error("Incorrect username or password.")
+                    st.error("Incorrect password.")
     with col2:
-        users = store.load("users", [])
-        if any(x.get("must_change") for x in users) or not users:
-            st.markdown(
-                f'<div class="note">First run: sign in with <b>{auth.DEFAULT_ADMIN["username"]}</b> / '
-                f'<b>{auth.DEFAULT_ADMIN["password"]}</b> and change the password immediately '
-                'under Settings.</div>', unsafe_allow_html=True)
+        st.html('<div class="note">This console is not linked from the website. '
+                'The password lives only in the app\'s Streamlit secrets — it is '
+                'never stored in the repository.</div>')
 
 
 # --------------------------------------------------------------------------- #
@@ -69,13 +75,8 @@ def _student_label(s):
 # --------------------------------------------------------------------------- #
 def portal(site):
     user = auth.current_user()
-    section("Admin portal", f"Welcome, {user.get('name') or user.get('username')}",
-            f"Storage: {store.storage_mode()} · everything you change here is saved "
-            f"{'into the private GitHub repo' if store.storage_mode()=='github' else 'to local JSON files'}.")
-
-    if user.get("must_change"):
-        st.markdown('<div class="note">⚠️ You are still on the default password. '
-                    'Change it under <b>Settings</b>.</div>', unsafe_allow_html=True)
+    section("Admin console", "Welcome back",
+            f"Everything you change here is saved to {store.storage_label()}.")
 
     errs = st.session_state.get("_store_errors")
     if errs:
@@ -116,6 +117,22 @@ def _dashboard(site):
     collected = sum(float(f.get("amount", 0) or 0) for f in fees if f.get("status") == "paid")
     enq = [e for e in store.load("enquiries", []) if e.get("status") == "new"]
 
+    v = visits.stats()
+
+    st.markdown("#### Website visitors")
+    c = st.columns(4)
+    with c[0]: kpi(v["total"], "Visits all time")
+    with c[1]: kpi(v["today"], "Today")
+    with c[2]: kpi(v["last7"], "Last 7 days")
+    with c[3]: kpi(v["last30"], "Last 30 days")
+    if any(row["Visits"] for row in v["series"]):
+        st.bar_chart(v["series"], x="Date", y="Visits", height=220,
+                     color=site.get("primary_color", "#7B1E3C"))
+    else:
+        st.caption("Daily visits will chart here once the site has traffic.")
+
+    st.markdown("---")
+    st.markdown("#### The school")
     c = st.columns(5)
     with c[0]: kpi(len(active), "Active students")
     with c[1]: kpi(len(pending), "Pending registrations")
@@ -751,10 +768,18 @@ def _site_content(site):
         accent = c[1].color_picker("Accent colour", site.get("accent_color", "#C9A227"))
 
         st.markdown("#### Home page")
+        hero_eyebrow = st.text_input("Hero eyebrow (small line above the heading)",
+                                     site.get("hero_eyebrow", ""))
         hero_heading = st.text_input("Hero heading", site.get("hero_heading", ""))
         hero_sub = st.text_area("Hero subtitle", site.get("hero_sub", ""), height=80)
         banner = st.text_input("Announcement banner (blank to hide)",
                                site.get("announcement_banner", ""))
+        c = st.columns(2)
+        why_heading = c[0].text_input("\"Why us\" section heading", site.get("why_us_heading", ""))
+        why_lead = c[1].text_input("\"Why us\" section intro", site.get("why_us_lead", ""))
+        c = st.columns(2)
+        cta_heading = c[0].text_input("Closing call-to-action heading", site.get("cta_heading", ""))
+        cta_lead = c[1].text_input("Closing call-to-action text", site.get("cta_lead", ""))
 
         st.markdown("#### Guru")
         c = st.columns(2)
@@ -763,6 +788,19 @@ def _site_content(site):
         guru_bio = st.text_area("Guru bio (blank line separates paragraphs)",
                                 site.get("guru_bio", ""), height=170)
         about_story = st.text_area("About / story text", site.get("about_story", ""), height=150)
+
+        st.markdown("#### Syllabus panel (About page)")
+        syl_heading = st.text_input("Syllabus panel heading", site.get("syllabus_heading", ""))
+        syl = list(site.get("syllabus", []))
+        while len(syl) < 6:
+            syl.append({"name": "", "note": ""})
+        new_syl = []
+        for i in range(6):
+            c = st.columns([2, 5])
+            nm = c[0].text_input(f"Item {i+1}", syl[i].get("name", ""), key=f"syn{i}")
+            nt = c[1].text_input(f"Note {i+1}", syl[i].get("note", ""), key=f"syt{i}")
+            if nm.strip():
+                new_syl.append({"name": nm, "note": nt})
 
         st.markdown("#### Why-us cards")
         why = list(site.get("why_us", []))
@@ -792,7 +830,9 @@ def _site_content(site):
         insta_note = st.text_input("Instagram section note", site.get("instagram_embed_note", ""))
         footer_note = st.text_input("Footer note", site.get("footer_note", ""))
 
-        st.markdown("#### Switches")
+        st.markdown("#### Fees & switches")
+        fees_note = st.text_area("Note under the public fee table",
+                                 site.get("fees_note", ""), height=70)
         c = st.columns(2)
         show_fees = c[0].checkbox("Show fees publicly", bool(site.get("show_fees_publicly", True)))
         reg_open = c[1].checkbox("Registrations open", bool(site.get("registration_open", True)))
@@ -802,7 +842,12 @@ def _site_content(site):
             payload.update({
                 "academy_name": academy_name, "tagline": tagline,
                 "primary_color": primary, "accent_color": accent,
+                "hero_eyebrow": hero_eyebrow,
                 "hero_heading": hero_heading, "hero_sub": hero_sub,
+                "why_us_heading": why_heading, "why_us_lead": why_lead,
+                "cta_heading": cta_heading, "cta_lead": cta_lead,
+                "syllabus_heading": syl_heading, "syllabus": new_syl,
+                "fees_note": fees_note,
                 "announcement_banner": banner, "guru_name": guru_name,
                 "guru_title": guru_title, "guru_bio": guru_bio,
                 "about_story": about_story, "why_us": new_why,
@@ -821,40 +866,37 @@ def _site_content(site):
 def _settings(user):
     st.markdown("### Settings")
 
-    st.markdown("#### Change admin password")
-    with st.form("adm_pw"):
-        n1 = st.text_input("New password", type="password")
-        n2 = st.text_input("Confirm new password", type="password")
-        if st.form_submit_button("Update password"):
-            if len(n1) < 8:
-                st.error("Use at least 8 characters.")
-            elif n1 != n2:
-                st.error("Passwords do not match.")
-            else:
-                auth.set_admin_password(user.get("id", "user_admin"), n1)
-                st.success("Password changed. Use it next time you sign in.")
+    st.markdown("#### Admin password")
+    st.html('<div class="note">The password is read from the app\'s Streamlit secrets, '
+            'not from this repository. To change it, open <b>Manage app → Settings → '
+            'Secrets</b> on Streamlit Cloud and edit <code>admin_password</code>. '
+            'Five wrong attempts lock this console for five minutes, and a signed-in '
+            'session expires after eight hours.</div>')
 
     st.markdown("---")
-    st.markdown("#### Storage")
+    st.markdown("#### Where content is stored")
     mode = store.storage_mode()
-    st.markdown(f"Current mode: **{mode}**")
     if mode == "github":
         cfg = store.gh_config()
-        st.markdown(f"Repository: `{cfg['repo']}` · branch `{cfg['branch']}` · folder `data/`")
-        st.caption("Every save above writes a commit to that private repository.")
+        st.markdown(
+            f"Repository **{cfg['owner']}/{cfg['repo']}** (private) · branch "
+            f"**`{cfg['branch']}`** · folder `data/`")
+        st.caption(
+            "Every save here is a commit on that branch. The app itself is deployed "
+            "from `main`, so saving content never restarts the site — and deleting "
+            "the content branch erases all stored data while leaving the code intact.")
     else:
-        st.markdown('<div class="note">Running on local JSON files. On Streamlit Cloud, add a '
-                    '<code>[github]</code> section with <code>token</code> and <code>repo</code> '
-                    'to the app secrets so data is committed to your private repo and survives '
-                    'restarts.</div>', unsafe_allow_html=True)
+        st.html('<div class="note">Running on temporary local files. Add a '
+                '<code>[github]</code> section with <code>token</code>, <code>owner</code>, '
+                '<code>repo</code> and <code>branch</code> to the app secrets so content '
+                'is stored permanently.</div>')
     if st.button("🔄 Reload data from storage"):
         store.refresh(); st.rerun()
 
     st.markdown("---")
     st.markdown("#### Backup")
-    bundle = {t: store.load(t, [] if t != "site" else {}) for t in store.TABLES}
-    for row in bundle.get("students", []) or []:
-        row = row
+    bundle = {t: store.load(t, {} if t in ("site", "visits") else [])
+              for t in store.TABLES}
     st.download_button("⬇ Download full data backup (JSON)",
                        json.dumps(bundle, indent=2, ensure_ascii=False).encode("utf-8"),
                        f"backup-{date.today().isoformat()}.json", "application/json")

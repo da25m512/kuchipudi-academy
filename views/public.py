@@ -72,20 +72,12 @@ def _embed_video(url, height=330):
 
 # --------------------------------------------------------------------------- #
 def home(site):
-    stats = _stats()
-    st.markdown(
+    st.html(
         f"""<div class="hero">
-  <div class="hero-eyebrow">Classical Kuchipudi · {esc(site.get('address','')).split(',')[-1].strip() or 'India'}</div>
+  <div class="hero-eyebrow">{esc(site.get('hero_eyebrow') or 'Classical Kuchipudi')}</div>
   <h1>{esc(site.get('hero_heading'))}</h1>
   <p>{esc(site.get('hero_sub'))}</p>
-  <div class="hero-meta">
-    <div><span class="hm-num">{stats['students']}</span><span class="hm-lab">Students learning</span></div>
-    <div><span class="hm-num">{stats['batches']}</span><span class="hm-lab">Active batches</span></div>
-    <div><span class="hm-num">{stats['events']}</span><span class="hm-lab">Performances</span></div>
-    <div><span class="hm-num">7+</span><span class="hm-lab">Years of teaching</span></div>
-  </div>
-</div>""",
-        unsafe_allow_html=True)
+</div>""")
 
     if site.get("announcement_banner"):
         st.markdown(f'<div class="note" style="margin-top:1.2rem">📣 {esc(site["announcement_banner"])}</div>',
@@ -99,8 +91,8 @@ def home(site):
         if st.button("See class timings", width="stretch"):
             st.session_state["page"] = "Classes"; st.rerun()
 
-    section("Why learn here", "An old form, taught carefully",
-            "Kuchipudi rewards patience. These are the things we refuse to rush.")
+    section("Why learn here", site.get("why_us_heading") or "An old form, taught carefully",
+            site.get("why_us_lead") or "")
     cols = st.columns(4)
     for col, item in zip(cols, site.get("why_us", [])[:4]):
         with col:
@@ -147,19 +139,10 @@ def home(site):
 <div class="who">{esc(q.get('name'))}</div><div class="rel">{esc(q.get('relation'))}</div></div>""",
                     unsafe_allow_html=True)
 
-    section("Ready when you are", "Come and watch a class first",
-            "Trial classes are free. Bring comfortable clothes and a willingness to count out loud.")
+    section("Ready when you are", site.get("cta_heading") or "Come and watch a class first",
+            site.get("cta_lead") or "")
     if st.button("Start registration →"):
         st.session_state["page"] = "Register"; st.rerun()
-
-
-def _stats():
-    students = [s for s in store.load("students", []) if s.get("status") == "active"]
-    batches = store.load("batches", [])
-    events = store.load("events", [])
-    return {"students": max(len(students), 0) or 40,
-            "batches": len(batches) or 4,
-            "events": len(events) or 12}
 
 
 # --------------------------------------------------------------------------- #
@@ -172,11 +155,16 @@ def about(site):
                 st.markdown(f"<p style='color:#6d5f63;line-height:1.8;font-size:1.02rem'>{esc(para)}</p>",
                             unsafe_allow_html=True)
     with col2:
-        st.markdown('<div class="card"><h4>The first year, roughly</h4>'
+        items = site.get("syllabus") or []
+        if items:
+            st.html('<div class="card"><h4>'
+                    + esc(site.get("syllabus_heading") or "The first year, roughly")
+                    + "</h4>"
                     + "".join(
-                        f"<p style='margin:.55rem 0'><b style='color:#7B1E3C'>{esc(n)}</b><br>{esc(d)}</p>"
-                        for n, d in seed.ADAVU_NOTES)
-                    + "</div>", unsafe_allow_html=True)
+                        f"<p style='margin:.55rem 0'><b style='color:var(--primary)'>"
+                        f"{esc(i.get('name'))}</b><br>{esc(i.get('note'))}</p>"
+                        for i in items)
+                    + "</div>")
 
     section("The guru", site.get("guru_name", ""), site.get("guru_title", ""))
     for para in str(site.get("guru_bio", "")).split("\n\n"):
@@ -221,9 +209,8 @@ def classes(site):
                  "Quarterly (₹)": b.get("fee_quarterly"), "Mode": b.get("mode")}
                 for b in batches]
         st.dataframe(rows, width="stretch", hide_index=True)
-        st.markdown('<div class="note">Fees are payable monthly or quarterly in advance. '
-                    'A one-time registration fee may apply for new students. Trial class is free.</div>',
-                    unsafe_allow_html=True)
+        if site.get("fees_note"):
+            st.html(f'<div class="note">{esc(site["fees_note"])}</div>')
 
     if st.button("Register for a batch →"):
         st.session_state["page"] = "Register"; st.rerun()
@@ -368,7 +355,6 @@ def register(site):
         c7, c8 = st.columns(2)
         pw1 = c7.text_input("Password *", type="password")
         pw2 = c8.text_input("Confirm password *", type="password")
-        agree = st.checkbox("I agree to the class timings, fee schedule and studio guidelines.")
         submitted = st.form_submit_button("Submit registration")
 
     if submitted:
@@ -378,7 +364,6 @@ def register(site):
         if not email.strip() or "@" not in email: errs.append("A valid email is required.")
         if len(pw1) < 6: errs.append("Password must be at least 6 characters.")
         if pw1 != pw2: errs.append("Passwords do not match.")
-        if not agree: errs.append("Please accept the guidelines.")
         existing = {str(s.get("email", "")).lower() for s in store.load("students", [])}
         if email.strip().lower() in existing:
             errs.append("This email is already registered — try logging in instead.")
