@@ -1,4 +1,7 @@
-"""Kuchipudi dance academy — public website, student portal and admin portal.
+"""Kuchipudi dance academy — public website, student portal and hidden admin console.
+
+Visitors just open the site. The admin console is not linked from anywhere:
+add ?view=admin to the URL and enter the password from Streamlit secrets.
 
 Run locally:   streamlit run app.py
 """
@@ -6,7 +9,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from lib import auth, seed, store, ui
+from lib import auth, seed, store, ui, visits
 from views import admin, public
 from views import student as student_view
 
@@ -19,6 +22,8 @@ st.set_page_config(
 
 PUBLIC_PAGES = ["Home", "About", "Classes", "Videos", "Gallery",
                 "Events", "Contact", "Register"]
+ADMIN_QUERY = "view"
+ADMIN_VALUE = "admin"
 
 
 def bootstrap():
@@ -40,31 +45,29 @@ def bootstrap():
     for table in ("students", "attendance", "fees", "gallery",
                   "enquiries", "registrations"):
         store.load(table, [])
-    auth.admin_users()
     st.session_state["_bootstrapped"] = True
     return site
 
 
-def navbar(site):
+def admin_requested() -> bool:
+    try:
+        return str(st.query_params.get(ADMIN_QUERY, "")).lower() == ADMIN_VALUE
+    except Exception:
+        return False
+
+
+def navbar():
+    """Public navigation. The admin console is deliberately not listed here."""
     page = st.session_state.get("page", "Home")
-    cols = st.columns(len(PUBLIC_PAGES) + 2, gap="small")
-    for col, name in zip(cols, PUBLIC_PAGES):
+    labels = PUBLIC_PAGES + ["Student"]
+    cols = st.columns([max(len(x), 5) for x in labels], gap="small")
+    for col, name in zip(cols, labels):
         with col:
-            if st.button(name, key=f"nav_{name}", width="stretch",
+            shown = "My portal" if (name == "Student" and auth.is_student()) else name
+            if st.button(shown, key=f"nav_{name}", width="stretch",
                          type="primary" if page == name else "secondary"):
                 st.session_state["page"] = name
                 st.rerun()
-    with cols[-2]:
-        label = "My portal" if auth.is_student() else "Student"
-        if st.button(label, key="nav_student", width="stretch",
-                     type="primary" if page == "Student" else "secondary"):
-            st.session_state["page"] = "Student"
-            st.rerun()
-    with cols[-1]:
-        if st.button("Admin", key="nav_admin", width="stretch",
-                     type="primary" if page == "Admin" else "secondary"):
-            st.session_state["page"] = "Admin"
-            st.rerun()
 
 
 def sidebar(site):
@@ -74,16 +77,13 @@ def sidebar(site):
         st.markdown("---")
         user = auth.current_user()
         if user:
-            st.markdown(f"Signed in as **{user.get('name') or user.get('username')}**  \n"
-                        f"_{auth.role()}_")
+            name = user.get("name") if isinstance(user, dict) else "Administrator"
+            st.markdown(f"Signed in as **{name}**  \n_{auth.role()}_")
             if st.button("Sign out", width="stretch"):
                 auth.logout()
                 st.session_state["page"] = "Home"
+                st.query_params.clear()
                 st.rerun()
-        else:
-            st.caption("Not signed in.")
-        st.markdown("---")
-        st.caption(f"Data store: {store.storage_mode()}")
         if st.button("Reload data", width="stretch"):
             store.refresh()
             st.rerun()
@@ -93,15 +93,29 @@ def main():
     site = bootstrap()
     ui.inject_css(site.get("primary_color", "#7B1E3C"),
                   site.get("accent_color", "#C9A227"))
+    visits.record_visit()
+
+    in_admin = admin_requested() or st.session_state.get("page") == "Admin"
+    if in_admin:
+        st.session_state["page"] = "Admin"
+
     ui.brandbar(site)
-    navbar(site)
+    if not in_admin:
+        navbar()
     sidebar(site)
     st.markdown("<div style='height:.6rem'></div>", unsafe_allow_html=True)
 
     page = st.session_state.get("page", "Home")
 
-    if page == "Home":
-        public.home(site)
+    if page == "Admin":
+        if auth.is_admin():
+            admin.portal(site)
+        else:
+            admin.login_panel(site)
+        if st.button("← Back to the website"):
+            st.session_state["page"] = "Home"
+            st.query_params.clear()
+            st.rerun()
     elif page == "About":
         public.about(site)
     elif page == "Classes":
@@ -121,11 +135,6 @@ def main():
             student_view.portal(site)
         else:
             student_view.login_panel(site)
-    elif page == "Admin":
-        if auth.is_admin():
-            admin.portal(site)
-        else:
-            admin.login_panel(site)
     else:
         public.home(site)
 

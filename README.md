@@ -1,91 +1,83 @@
-# Kuchipudi Academy — website, student portal & admin portal
+# Kuchipudi Academy
 
-A Streamlit application for a classical Kuchipudi dance school: a public website,
-a student portal, and an admin portal that controls every part of both.
+A Streamlit site for a classical Kuchipudi dance school: a public website, a
+student portal, and a hidden admin console that controls every word of both.
 
-All data lives as JSON inside this **private** repository (`data/`), written
-through the GitHub Contents API — so nothing is lost when Streamlit Cloud
-restarts the app, and every change is a commit you can look back through.
+| Who | How they get in | What they can do |
+|---|---|---|
+| Visitor | Just open the site. No login, ever. | Browse classes, watch videos, register for a batch, send an enquiry |
+| Student | Sign in on the **Student** tab once their registration is approved | Attendance, fees, practice videos, announcements |
+| Admin | Add `?view=admin` to the URL and enter the password | Edit every word, price, photo and setting; manage students, fees and attendance |
 
----
+Nothing is hard-coded. Academy name, email, phone, hero text, guru biography,
+section headings, syllabus, fee notes and colours are all edited from the admin
+console.
 
-## What's in it
+## Where the content lives
 
-**Public website**
-
-- Hero home page with live counts, why-us cards, guru introduction, upcoming events, testimonials
-- About — the form's history and the first-year syllabus
-- Classes — batches, levels, timings, seats and a fee table
-- Videos — publicly visible practice clips (YouTube / Drive / Instagram / mp4)
-- Gallery — photographs and Instagram reels
-- Events — upcoming and past performances
-- Contact — details plus an enquiry form that lands in the admin portal
-- Register — online enrolment; the student picks their own portal password
-
-**Student portal** (`Student` tab)
-
-- Attendance percentage, class-by-class record
-- Fee status, history and outstanding balance
-- Practice videos filtered to their batch or level
-- Announcements from the guru
-- Profile and self-service password change
-
-**Admin portal** (`Admin` tab) — everything is editable here
-
-| Tab | What it does |
-|---|---|
-| Dashboard | Students, pending registrations, fees collected/outstanding, enquiries, per-batch counts |
-| Registrations | Approve (creates the student + login) or reject, assign to a batch |
-| Students | Search, filter, add, edit, reset passwords, deactivate, delete, CSV export |
-| Batches | Create/edit/delete batches, timings, seats, fees |
-| Attendance | Mark a whole batch for a date, per-student summary, CSV export |
-| Fees | Generate a month's invoices per batch, mark paid, one-off charges, CSV export |
-| Videos | Add links, set public or batch/level-restricted, live preview |
-| Gallery | Image URLs and captions |
-| Events | Performances with dates, venues, publish toggle |
-| Testimonials | Quotes with publish toggle |
-| Announcements | Messages to all students or a single batch, pinning |
-| Enquiries | Website enquiries, mark handled, CSV export |
-| Site content | Academy name, colours, hero text, guru bio, why-us cards, contact details, social links, fee visibility, registration open/closed |
-| Settings | Change admin password, storage status, full JSON backup and restore |
-
----
-
-## First login
+Content is stored in this same **private** repository, on a separate branch
+called `content`:
 
 ```
-username: admin
-password: kuchipudi@2026
+content branch
+└── data/
+    ├── site.json           name, hero, guru, contact, colours, switches
+    ├── batches.json        classes, timings, seats, fees
+    ├── students.json       enrolled students (passwords are PBKDF2 hashes)
+    ├── registrations.json  pending sign-ups awaiting approval
+    ├── attendance.json     per-class attendance
+    ├── fees.json           invoices and payments
+    ├── videos.json         practice and public videos
+    ├── gallery.json        photographs
+    ├── events.json         performances
+    ├── testimonials.json   quotes
+    ├── announcements.json  messages to students
+    ├── enquiries.json      contact-form messages
+    └── visits.json         website visitor counts
 ```
 
-Change it immediately under **Settings → Change admin password**. You can also set
-a break-glass password in secrets under `[admin] password`.
+Using a separate branch matters. Streamlit Community Cloud watches the branch it
+deployed from (`main`), so saving content never reboots the live site. You get a
+full version history of every edit for free, and **deleting the `content` branch
+erases all stored data in one action while leaving the code untouched**.
 
----
+The branch is created automatically the first time the app saves anything.
 
-## Deploying on Streamlit Community Cloud
+## Setup
 
-1. Push this repo (private is fine — Streamlit Cloud can deploy private repos).
-2. Go to <https://share.streamlit.io> → **Create app** → pick this repo,
-   branch `main`, main file `app.py`.
-3. Under **Advanced settings → Secrets**, paste:
+### 1. Create a GitHub token
+
+GitHub → Settings → Developer settings → Personal access tokens → Fine-grained
+tokens → Generate new token
+
+- Repository access: **Only select repositories** → this repo
+- Permissions: Repository permissions → **Contents: Read and write**
+- Expiration: whatever you're comfortable replacing
+
+Copy the token — GitHub shows it only once.
+
+### 2. Deploy on Streamlit Community Cloud
+
+Go to <https://share.streamlit.io>, sign in with GitHub, **Create app**, pick
+this repo, branch `main`, main file `app.py`. Open **Advanced settings →
+Secrets** and paste:
 
 ```toml
-[github]
-token  = "github_pat_..."          # fine-grained PAT, Contents: Read & write, this repo only
-repo   = "your-username/your-repo"
-branch = "main"
+admin_password = "pick-something-long-and-private"
 
-[admin]
-password = "a-long-password-you-choose"
+[github]
+token  = "github_pat_…"
+owner  = "your-github-username"
+repo   = "kuchipudi-academy"
+branch = "content"
 ```
 
-4. Deploy. The app seeds `data/*.json` on first run.
+Deploy.
 
-Without the `[github]` secrets the app still runs, but writes go to local files
-that Streamlit Cloud wipes on restart — so set them before real use.
+### 3. Fill it in
 
----
+Open `https://your-app.streamlit.app/?view=admin`, enter the password, and work
+through the tabs — **Site content** first, then **Batches**.
 
 ## Running locally
 
@@ -94,27 +86,48 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml` if you want
-local runs to read and write the repo instead of local files.
+Without secrets it runs against a local `local_content/` folder so you can try
+it offline. That folder is temporary and gitignored; only the GitHub backend
+stores anything permanently.
 
----
+## Admin console
+
+| Tab | What it does |
+|---|---|
+| Dashboard | Website visitors (all time, today, 7 and 30 days, daily chart), students, pending registrations, fees collected and outstanding |
+| Registrations | Approve — which creates the student and their portal login — or reject |
+| Students | Search, add, edit, reset passwords, deactivate, delete, CSV export |
+| Batches | Create and edit batches, timings, seats, fees |
+| Attendance | Mark a whole batch for a date, per-student summary, CSV export |
+| Fees | Generate a month's invoices, mark paid, one-off charges, CSV export |
+| Videos | YouTube, Drive, Instagram or mp4 links; public or restricted to a batch/level |
+| Gallery / Events / Testimonials / Announcements | Content with publish toggles |
+| Enquiries | Contact-form messages, mark handled, CSV export |
+| Site content | Every word on the public site, plus colours and switches |
+| Settings | Storage status, full JSON backup and restore |
+
+## Security
+
+- The admin password is compared in constant time, is read only from Streamlit
+  secrets, locks out for five minutes after five wrong attempts, and the signed-in
+  session expires after eight hours.
+- The console is not linked from anywhere on the public site.
+- Student passwords are stored as PBKDF2-SHA256 hashes, never in plain text.
+- All stored content is HTML-escaped before it reaches the page, so a visitor
+  cannot inject scripts through the enquiry or registration forms.
+- The repository is private, so the `content` branch and every student record on
+  it are private too.
 
 ## Layout
 
 ```
-app.py                  router, navigation, bootstrap
-lib/store.py            GitHub-backed JSON store (+ local fallback)
-lib/auth.py             PBKDF2 password hashing, admin & student sessions
-lib/ui.py               theme, CSS, shared components
-lib/seed.py             default content, seeded on first run
-views/public.py         public website pages
-views/student.py        student portal
-views/admin.py          admin portal
-data/*.json             the database
+app.py              router, navigation, hidden admin route
+lib/store.py        JSON store on the content branch (+ local fallback)
+lib/auth.py         admin password, student logins, session expiry
+lib/visits.py       visitor counting, buffered
+lib/ui.py           theme, CSS, shared components
+lib/seed.py         default content, seeded on first run
+views/public.py     public website
+views/student.py    student portal
+views/admin.py      admin console
 ```
-
-## Notes on data
-
-- Passwords are stored as PBKDF2-SHA256 hashes, never in plain text.
-- Because the repo is private, `data/` is private too — keep it that way.
-- **Settings → Download full data backup** gives you a single JSON of everything.
