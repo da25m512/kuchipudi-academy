@@ -1,6 +1,7 @@
 {
   "academy_name": "Nrityanjali Kuchipudi Academy",
   "tagline": "Where devotion becomes dance",
+  "hero_eyebrow": "Classical Kuchipudi",
   "hero_heading": "Learn Kuchipudi the way it was meant to be taught",
   "hero_sub": "A classical Kuchipudi school rooted in the Andhra tradition — abhinaya, nritta and the joy of performing, taught step by patient step.",
   "hero_cta": "Book a trial class",
@@ -9,6 +10,25 @@
   "guru_instagram": "https://www.instagram.com/gayathri_varshitha",
   "guru_bio": "Gayathri Varshitha is a Kuchipudi dancer and teacher trained in the classical Andhra tradition. She has performed across stages and temple festivals, and founded this academy to pass on the art form the way she received it — with discipline, devotion and a great deal of warmth.\n\nHer teaching balances the rigour of adavus and jathis with the storytelling heart of abhinaya, so that every student learns not only how to move, but why the movement means what it means.",
   "about_story": "Kuchipudi began in a small village of the same name in Andhra Pradesh, carried for centuries by families of dancer-actors who performed dance-dramas in temple courtyards. It is a form that speaks: quick, buoyant footwork, rounded lines, and a face that carries the whole story.\n\nThis academy teaches that lineage faithfully — from the first namaskaram to full-length items — while keeping classes joyful and accessible for children and adults alike.",
+  "syllabus_heading": "The first year, roughly",
+  "syllabus": [
+    {
+      "name": "Tatta adavu",
+      "note": "The very first strike. Feet flat, knees turned out, taalam counted aloud."
+    },
+    {
+      "name": "Natta adavu",
+      "note": "Stretch and reach — the line of the leg and the line of the arm agreeing."
+    },
+    {
+      "name": "Kuditta metta",
+      "note": "Heel and ball of the foot in conversation with the beat."
+    },
+    {
+      "name": "Jaaru adavu",
+      "note": "The glide that gives Kuchipudi its rounded, flowing signature."
+    }
+  ],
   "why_us": [
     {
       "icon": "ॐ",
@@ -40,6 +60,11 @@
   "facebook": "",
   "instagram_embed_note": "Latest reels and performance clips from our Instagram",
   "footer_note": "Established with love for the art of Kuchipudi.",
+  "why_us_heading": "An old form, taught carefully",
+  "why_us_lead": "Kuchipudi rewards patience. These are the things we refuse to rush.",
+  "cta_heading": "Come and watch a class first",
+  "cta_lead": "Trial classes are free. Bring comfortable clothes and a willingness to count out loud.",
+  "fees_note": "Fees are payable monthly or quarterly in advance. A one-time registration fee may apply for new students. Trial class is free.",
   "primary_color": "#7B1E3C",
   "accent_color": "#C9A227",
   "announcement_banner": "",
